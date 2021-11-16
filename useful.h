@@ -41,7 +41,7 @@ float** RandomVector(float vector[])
     float angle = RandFloat((float)0, 2 * M_PI);
     vector[0] = norme * cosf(angle);
     vector[1] = norme * sinf(angle);
-    return vector;
+    return *vector;
 }
 
 //coord_pol = [r, téta] est l'entrée et coord_cart = [x, y] est renvoyée. coord_cart est censée etre vide en début de fonction.
