@@ -5,32 +5,25 @@ float* AddVector2(const float a[], const float b[], float result[]) //tous des t
 {
     result[0] = a[0] + b[0];
     result[1] = a[1] + b[1];
-    return *result;
+    return result;
 }
 float* SubVector2(const float a[], const float b[], float result[]) //tous des tableaux de taille 2 représentant des vecteurs
 {
     result[0] = a[0] - b[0];
     result[1] = a[1] - b[1];
-    return *result;
+    return result;
 }
 float* MultVector2(const float a[], const float b[], float result[]) //tous des tableaux de taille 2 représentant des vecteurs
 {
     result[0] = a[0] * b[0];
     result[1] = a[1] * b[1];
-    return *result;
+    return result;
 }
 float* DivVector2(const float a[], const float b[], float result[]) //tous des tableaux de taille 2 représentant des vecteurs
 {
     result[0] = a[0] / b[0];
     result[1] = a[1] / b[1];
-    return *result;
-}
-
-void AddVertex(Vector2* newVertex, float map[][]) //rajoute un vecteur à la carte
-{
-    map->vertices[map->count].x = newVertex->x;
-    map->vertices[map->count].y = newVertex->y;
-    map->count++;
+    return result;
 }
 
 int RandInt(int a, int b){
