@@ -18,14 +18,17 @@ bool IsCollinear(float a[], float b[])
 //Renvoie true si les 2 segment sont presque parallèle, false sinon;
 bool IsParallele(float seg1[][2], float seg2[][2])
 {
-    float v1[2]; float v2[];
-    float a[2] = SubVector2((seg1[1]), (seg1[0]), v1);
-    float b[2] = SubVector2((seg2[1]), (seg2[0]), v2);
-    return IsCollinear(&a, &b);
+    float v1[2];
+    float v2[2];
+    SubVector2((seg1[1]), (seg1[0]), v1);
+    SubVector2((seg2[1]), (seg2[0]), v2);
+    /*float a[2] = {v1[0], v1[1]};
+    float b[2] = {v2[0], v2[1]};*/
+    return IsCollinear(v1, v2);
 }
 
 // Renvoie le segment passant à peu près par tout les points(coor cartésien) de la liste points, seg doit etre vide au début de la fonction mais pas null
-Segment* ToSegment(const float points[][2], int length, float seg[][2])
+void ToSegment(const float points[][2], int length, float seg[][2])
 {
     //On fait l'algorithme de régression linéaire
     float sumX = 0;
@@ -54,11 +57,10 @@ Segment* ToSegment(const float points[][2], int length, float seg[][2])
     //On calcule l'ordonnée à l'origine b
     float b = (sumY - (avgSlope * sumX)) / length;
     //On calcule les 2 points d'extrémité du segment
-    float A[2] = { points[indexXMin][0], avgSlope * points[indexXMin][0] + b };
-    float B[2] = { points[indexXMax][0], avgSlope * points[indexXMax][0] + b };
-    seg[0] = A;
-    seg[1] = B;
-    return seg;
+    seg[0][0] = points[indexXMin][0];
+    seg[0][1] = avgSlope * points[indexXMin][0] + b;
+    seg[1][0] = points[indexXMax][0];
+    seg[1][1] = avgSlope * points[indexXMax][0] + b;
 }
 
 //Renvoie l'équation de la droite (y = ax + b ou a = equation[0] et b = equation[1]) dirigé par le segment segment, equation doit etre vide mais non nul <=> malloc a faire avant d'appeler la fonction
@@ -69,28 +71,31 @@ void GetSegmentEquation(const float segment[][2], float equation[])
 }
 
 //Renvoie true si la droite (OP) intersect le segment seg
-bool CollideSegmentDroite(const float seg[][2], const float O[2], const float P[])
+int CollideSegmentDroite(const float seg[][2], const float O[2], const float P[])
 {
-    float OP[2] = SubVector2(P, O, OP);
-    float OB[2] = SubVector2(seg[1], O, OB);
-    float OA[2] = SubVector2(seg[0], O, OA);
+    float OP[2];
+    SubVector2(P, O, OP);
+    float OB[2];
+    SubVector2(seg[1], O, OB);
+    float OA[2];
+    SubVector2(seg[0], O, OA);
     return (OP[0] * OB[1] - OP[1] * OB[0]) * (OP[0] * OA[1] - OP[1] * OA[0]) < 0;
 }
 
 //Renvoie true si les 2 segments s'intersect
-bool CollideSegments(const float seg1[][2], const float seg2[][2])
+int CollideSegments(const float seg1[][2], const float seg2[][2])
 {
-    return CollideSegmentDroite(seg1, &seg2[0], &seg2[1]) && CollideSegmentDroite(seg2, &seg1[0], &seg2[1]);
+    return (CollideSegmentDroite(seg1, seg2[0], seg2[1]) && CollideSegmentDroite(seg2, seg1[0], seg2[1]));
 }
 
 //Renvoie true si les 2 segment s'intersectionne en plus des coordonnées du point d'intersection, renvoie false et (0, 0) si les 2 segment de se croise pas
-bool Intersect(const float seg1[][2], const float seg2[][2], float intersectionPoint[])
+int Intersect(const float seg1[][2], const float seg2[][2], float intersectionPoint[])
 {
     if(!CollideSegments(seg1, seg2))//pas la peine de de continuer si les 2 segments ne se coupe pas
     {
         intersectionPoint[0] = 0;
         intersectionPoint[1] = 0;
-        return false;
+        return 0;
     }
     //On récupère les équations des 2 segments
     float eq1[2];

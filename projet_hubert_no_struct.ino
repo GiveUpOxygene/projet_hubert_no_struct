@@ -15,15 +15,17 @@ const float RANGEWALLDETECTION = 15;//au début on détecte le mur a suivre au d
 const float DISTWALL = 15;//la distance entre le robot et le mur.
 const float MAXSPEED = 15;//la vitesse du robot en cm/s
 const float dt = 33;// le temps en ms entre 2 fonction loop
-#define MAPMAXVERTICES 100
+const int MAPMAXVERTICES = 100;
 
-float room[MAPMAXVERTICES][2];
 int currentState = 0; //on initialise l'état du robot
-Vector2 position;//La position du robot
+float position[2];//La position du robot
 float angle;//L'angle du robot(rad)
 int isRepereSet = 0;
 float oldWallDist = 0;
-int vertexIndex = 1;
+int isWallAhead = 0;
+float newWallDist = 0;
+int vertexIndex;
+float room[MAPMAXVERTICES][2];
 
 //time en ms
 void Move(float time)
@@ -34,7 +36,7 @@ void Move(float time)
         position[1] += sinf(angle) * MAXSPEED * (time/1000);
     }
 }
-void AddVertex(Vector2* newVertex, float map[][],int vertexIndex) //rajoute un vecteur à la carte
+void AddVertex(float newVertex[], float map[][2],int vertexIndex) //rajoute un vecteur à la carte
 {
     map[vertexIndex][0] = newVertex[0];
     map[vertexIndex][1] = newVertex[1];
@@ -42,6 +44,14 @@ void AddVertex(Vector2* newVertex, float map[][],int vertexIndex) //rajoute un v
 }
 
 void setup() {
+    //initialisation de la carte
+    vertexIndex = 1;
+    for (int i = 0; i < MAPMAXVERTICES; i++)
+    {
+        room[i][0] = 0;
+        room[i][1] = 0;
+    }
+    //fin d'initialisation
     myservo.attach(3); // attach servo on pin 3 to servo object
     Serial.begin(9600);//open serial and set the baudrate
     /*
@@ -59,7 +69,6 @@ void setup() {
     position[0] = 0;
     position[1] = 0;
     angle = M_PI / 2; // le robot
-    &room = InitMap(&room);
     currentState = 0;
     //on avance
     forward();
@@ -70,7 +79,7 @@ void loop()
     switch (currentState)
     {
         case 0: //trouver un mur
-            int isWallAhead = 0;//mettre dans le booléen si le capteur détecte un mur à moins de RANGEWALLDETECTION
+            isWallAhead = 0;//mettre dans le booléen si le capteur détecte un mur à moins de RANGEWALLDETECTION
             if(isWallAhead)
             {
                 stop();
@@ -88,7 +97,7 @@ void loop()
             //d'abord le mur devant
             myservo.write(90);
             delay(30);
-            int isWallAhead = 0;//on effectue la mesure pour voir si il y a un mur devant
+            isWallAhead = 0;//on effectue la mesure pour voir si il y a un mur devant
             if(isWallAhead)
             {
                 stop();
@@ -130,7 +139,7 @@ void loop()
             }
 
             //on regarde sur le côté si on s'éloigne rapidement du mur
-            float newWallDist = 0;//faire la mesure
+            newWallDist = 0;//faire la mesure
             if(fabsf(newWallDist - oldWallDist) > 2 * DISTWALL)//Constante à droite surement à modifier
             {
                 //on a trouvé un nouveau sommet, on calcule sa position
