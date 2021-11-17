@@ -19,7 +19,7 @@ const int MAPMAXVERTICES = 100;
 
 int currentState = 0; //on initialise l'état du robot
 float position[2];//La position du robot
-float angle;//L'angle du robot(rad)
+float angle; //L'angle du robot(rad)
 int isRepereSet = 0;
 float oldWallDist = 0;
 int isWallAhead = 0;
@@ -36,6 +36,7 @@ void Move(float time)
         position[1] += sinf(angle) * MAXSPEED * (time/1000);
     }
 }
+
 void AddVertex(float newVertex[], float map[][2],int vertexIndex) //rajoute un vecteur à la carte
 {
     map[vertexIndex][0] = newVertex[0];
@@ -54,7 +55,6 @@ void setup() {
     //fin d'initialisation
     myservo.attach(3); // attach servo on pin 3 to servo object
     Serial.begin(9600);//open serial and set the baudrate
-    /*
     pinMode(Echo, INPUT);
     pinMode(Trig, OUTPUT);
     pinMode(IN1,OUTPUT);//before using io pin, pin mode must be set first
@@ -64,7 +64,6 @@ void setup() {
     pinMode(ENA,OUTPUT); //acceleration
     pinMode(ENB,OUTPUT);
     stop();
-    */
     myservo.write(180);
     position[0] = 0;
     position[1] = 0;
@@ -102,8 +101,8 @@ void loop()
             {
                 stop();
                 //on mesure la position du sommet (avec les points sur le mur puis régression affine puis calcul d'intersection)
-                float newVertexPosition[2];//on mettra les coordonnées dans ce vecteur
-                ///On regarde si c'est le premier sommet, si oui on définit le Repère orthonormé
+                float newVertexPosition[2]; //on mettra les coordonnées dans ce vecteur
+                //On regarde si c'est le premier sommet, si oui on définit le Repère orthonormé
                 if(vertexIndex == 0)
                 {
                     isRepereSet = 1;
