@@ -80,32 +80,44 @@ void loop()
     {
         case 0: //trouver un mur
             isWallAhead = 0;//mettre dans le booléen si le capteur détecte un mur à moins de RANGEWALLDETECTION
-            forward(150);
+            forward(200);
             while (isWallAhead == 0) {
                 //delay(10*100 / MAXSPEED*10); //on mesure tous les 10 cm
                 //Stop();
-                if (Distance_test() < DISTWALL){
+                if (Distance_test() < DISTWALL + 20){
                     isWallAhead = 1;
                 }
             }
+            Stop();
+            delay(3000);
             if(isWallAhead == 1)
             {
-                //on se replace à 15 du mur
                 float dist = Distance_test();
-                while(fabs(dist - DISTWALL) > 1)
+                /*
+                //on se replace à 15cm du mur
+                while(dist < DISTWALL){
+                    back(5);
+                    delay(50);
+                    dist = Distance_test();
+                }
+                Stop();
+                */
+                //On se place à DISTWALL -+ 4 cm
+                while(fabsf(dist - DISTWALL) > 4)
                 {
                   if(dist > DISTWALL)
                   {
-                    forward(255);
-                    delay(5);
+                    forward(100);
+                    delay(50); //delay différents pour ne pas être bloqué dans une boucle infinie
                     Stop();
                   }
                   else
                   {
-                    back(255);
-                    delay(5);
+                    back(100);
+                    delay(75);
                     Stop();
                   }
+                  dist = Distance_test();
                 }
                 Stop();
                 currentState = 1;
