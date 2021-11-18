@@ -18,6 +18,40 @@ void Rotate(int angle) //angle négatif : à gauche, angle positif : à droite
     }
 }
 
+void PutRobotParallele()
+{
+    myservo.write(90);
+    delay(300);
+    float y = Distance();
+    myservo.write(180);//capteur vers la gauche
+    delay(700);
+    float x1 = Distance();
+    myservo.write(0);//capteur vers la droite
+    delay(700);
+    float x2 = Distance();
+    myservo.write(90);
+
+    if(x1 > 70 && x2 > 70)
+    {
+        //Le robot est trop en face du mur pour faire au moins une mesure correct, on tourne pour recommencer les mesure
+        Rotate(25);
+        PutRobotParallele();
+    }
+    else
+    {
+        //Si x1 < x2 le mur est a gauche du robot, sinon il est a droite
+        //Pour aller au plus simple on supp qu'on est pile devant.
+        if(x1 < x2)
+        {
+            return(90 + ((atanf(y/x1) * 180)/M_PI));
+        }
+        else
+        {
+            return(-90 - ((atanf(y/x2) * 180) / M_PI));
+        }
+    }
+}
+
 //pour les angles de 3° à 177°, utiliser la méthode pour tourner et se mettre parallèle au mur
 //pour les angles de 45° à 135°, utiliser la fonction angle définie dans useful_robot.h
 //pour les angles de 194° à 270°, utiliser le psudo-code
@@ -31,8 +65,29 @@ void HalfBigAngle(){
         MesureDist(105, 0, 8, mesures_mur);
         float mesures_coord[8][2];
         MesuresToCoord(mesures_mur, mesures_coord, 8);
-        if (Angle(mesures_coord, 8)) {
-            
+        int new_angle = fabsf(Angle(mesures_coord, 8))
+        if ((new_angle > 195) || (new_angle < 175)) {
+            //calculer posVertex
+            //AddVertex
+        }
+        //méthode parallèle
+        Rotate(90);
+        //on se place à la bonne distance du mur
+        while(fabsf(dist - DISTWALL) > 4)
+        {
+          if(dist > DISTWALL)
+          {
+            forward(100);
+            delay(50); //delay différents pour ne pas être bloqué dans une boucle infinie
+            Stop();
+          }
+          else
+          {
+            back(100);
+            delay(75);
+            Stop();
+          }
+          dist = Distance_test();
         }
     }
 }
