@@ -103,7 +103,7 @@ void loop()
                     {
                       isWallAhead = 1;
                       break;
-                    }                    
+                    }
                 }
                 else
                 {
@@ -148,14 +148,14 @@ void loop()
                 //On est bien placé en therme de distance, on place le robot // au mur avec lu mur à droite du robot car après on suivra le mur par la droite.
                 //On calcule l'angle de rotation pour que le robot soit bien orienté <=> // au mur.
                 PutRobotParallele();
-                
+
                 currentState = 1;
             }
             break;
         case 1: //suivre un mur
             Stop();
             break;
-            
+
             isWallAhead = 0;//on effectue la mesure pour voir si il y a un mur devant ou si le mur à gauche/droite s'écarte d'un coup
             if ((Distance() < DISTWALL) || (Distance() - DISTWALL > 5)){ //à cause de l'erreur, ne peut pas "voir un angle entre 180° et 206°"
                 isWallAhead = 1;
