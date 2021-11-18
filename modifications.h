@@ -35,7 +35,7 @@ float PutRobotParallele()
     {
         //Le robot est trop en face du mur pour faire au moins une mesure correct, on tourne pour recommencer les mesure
         Rotate(25);
-        PutRobotParallele();
+        return PutRobotParallele() - 25;
     }
     else
     {
@@ -60,9 +60,10 @@ float PutRobotParallele()
 
 void HalfBigAngle(){
     forward(150); //on avance un peu
+    myservo.write(0);//capteur vers la droite
     delay(1000);
     Stop();
-    if (DistDroite() > 2.5) { //si le mur s'écarte d'un coup
+    if (Distance() > 2.5) { //si le mur s'écarte d'un coup
         Rotate(90); //on se tourne vers le mur
         float mesures_mur[8]; //on mesure l'angle
         MesureDist(105, 0, 8, mesures_mur);
@@ -73,6 +74,35 @@ void HalfBigAngle(){
         {
             //calculer posVertex TO DO      //on calcule la position du sommet et on l'ajoute à la carte
             //AddVertex TO DO
+
+            //On récupère les vecteur directeur des 2 murs.
+            float vecteur_1[2];
+            float vecteur_2[2];
+            int count_gauche = 0;
+            int count_droite = longueur;
+            //on regarde le plus grand vecteur directeur du mur de gauche (face au robot)
+            do {
+                vecteur_1[0] = mesures_coord[count_gauche+1][0] - mesures_coord[count_gauche][0];
+                vecteur_1[1] = mesures_coord[count_gauche+1][1] - mesures_coord[count_gauche][1];
+                vecteur_2[0] = mesures_coord[count_gauche+2][0] - mesures_coord[count_gauche+1][0];
+                vecteur_2[1] = mesures_coord[count_gauche+2][1] - mesures_coord[count_gauche+1][1];
+                count_gauche ++;
+            } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
+            //on regarde le plus grand vecteur directeur du mur de droite (celui suivi jusqu'à maintenant)
+            do {
+                vecteur_1[0] = mesures_coord[count_droite-1][0] - mesures_coord[count_droite][0];
+                vecteur_1[1] = mesures_coord[count_droite-1][1] - mesures_coord[count_droite][1];
+                vecteur_2[0] = mesures_coord[count_droite-2][0] - mesures_coord[count_droite-1][0];
+                vecteur_2[1] = mesures_coord[count_droite-2][1] - mesures_coord[count_droite-1][1];
+                count_droite --;
+            } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
+            float vertex[2];
+            if(Intersect(mesures_coord[0], mesures_coord[count_gauche], mesures_coord[longueur - 1], mesures_coord[count_droite], vertex))
+            {
+                
+            }
+
+
             new_angle = PutRobotParallele(); //on se place face au nouveau mur à suivre
             Rotate(new_angle - 90);
             //on se place à la bonne distance du mur (DISTWALL + 10 cm)
@@ -90,7 +120,7 @@ void HalfBigAngle(){
                     delay(75);
                     Stop();
                 }
-                dist = Distance_test();
+                dist = Distance();
             }
             Rotate(-90);
         }

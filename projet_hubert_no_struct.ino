@@ -38,7 +38,7 @@ void Move(float time)
     }
 }
 
-void AddVertex(float newVertex[], float map[][2],int vertexIndex) //rajoute un vecteur à la carte
+void AddVertex(float newVertex[], float map[][2]) //rajoute un vecteur à la carte
 {
     map[vertexIndex][0] = newVertex[0];
     map[vertexIndex][1] = newVertex[1];
@@ -74,6 +74,79 @@ void setup() {
     currentState = 0;
 }
 
+//pour les angles de 3° à 177°, utiliser la méthode pour tourner et se mettre parallèle au mur
+//pour les angles de 45° à 135°, utiliser la fonction angle définie dans useful_robot.h
+//pour les angles de 194° à 270°, utiliser HalfBigAngle
+//pour les angles de 270° à 360°, ??????
+//les angles de 177° à 194° seront traités comme des erreurs de mesure
+
+void HalfBigAngle(){
+    forward(150); //on avance un peu
+    myservo.write(0);//capteur vers la droite
+    delay(1000);
+    Stop();
+    if (Distance() > 2.5) { //si le mur s'écarte d'un coup
+        Rotate(90); //on se tourne vers le mur
+        float mesures_mur[8]; //on mesure l'angle
+        MesureDist(105, 0, 8, mesures_mur);
+        float mesures_coord[8][2];
+        MesuresToCoord(mesures_mur, mesures_coord, 8);
+        int new_angle = fabsf(Angle(mesures_coord, 8))
+        if ((new_angle > 195) || (new_angle < 175)) //si l'angle est supérieur à ce que l'on considère comme une erreur de mesure
+        {
+            //calculer posVertex TO DO      //on calcule la position du sommet et on l'ajoute à la carte
+            //AddVertex TO DO
+
+            //On récupère les vecteur directeur des 2 murs.
+            float vecteur_1[2];
+            float vecteur_2[2];
+            int count_gauche = 0;
+            int count_droite = longueur;
+            //on regarde le plus grand vecteur directeur du mur de gauche (face au robot)
+            do {
+                vecteur_1[0] = mesures_coord[count_gauche+1][0] - mesures_coord[count_gauche][0];
+                vecteur_1[1] = mesures_coord[count_gauche+1][1] - mesures_coord[count_gauche][1];
+                vecteur_2[0] = mesures_coord[count_gauche+2][0] - mesures_coord[count_gauche+1][0];
+                vecteur_2[1] = mesures_coord[count_gauche+2][1] - mesures_coord[count_gauche+1][1];
+                count_gauche ++;
+            } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
+            //on regarde le plus grand vecteur directeur du mur de droite (celui suivi jusqu'à maintenant)
+            do {
+                vecteur_1[0] = mesures_coord[count_droite-1][0] - mesures_coord[count_droite][0];
+                vecteur_1[1] = mesures_coord[count_droite-1][1] - mesures_coord[count_droite][1];
+                vecteur_2[0] = mesures_coord[count_droite-2][0] - mesures_coord[count_droite-1][0];
+                vecteur_2[1] = mesures_coord[count_droite-2][1] - mesures_coord[count_droite-1][1];
+                count_droite --;
+            } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
+            float vertex[2];
+            if(Intersect(mesures_coord[0], mesures_coord[count_gauche], mesures_coord[longueur - 1], mesures_coord[count_droite], vertex))
+            {
+                AddVertex(vertex);
+            }
+
+            new_angle = PutRobotParallele(); //on se place face au nouveau mur à suivre
+            Rotate(new_angle - 90);
+            //on se place à la bonne distance du mur (DISTWALL + 10 cm)
+            while(fabsf(dist - DISTWALL - 10) > 4)
+            {
+                if(dist > DISTWALL)
+                {
+                    forward(100);
+                    delay(50); //delay différents pour ne pas être bloqué dans une boucle infinie
+                    Stop();
+                }
+                else
+                {
+                    back(100);
+                    delay(75);
+                    Stop();
+                }
+                dist = Distance();
+            }
+            Rotate(-90);
+        }
+    }
+}
 
 void loop()
 {
@@ -103,7 +176,7 @@ void loop()
                     {
                       isWallAhead = 1;
                       break;
-                    }
+                    }                    
                 }
                 else
                 {
@@ -148,14 +221,13 @@ void loop()
                 //On est bien placé en therme de distance, on place le robot // au mur avec lu mur à droite du robot car après on suivra le mur par la droite.
                 //On calcule l'angle de rotation pour que le robot soit bien orienté <=> // au mur.
                 PutRobotParallele();
-
+                //on avance pour commencer l'étape 2
+                forward();
                 currentState = 1;
             }
             break;
         case 1: //suivre un mur
-            Stop();
-            break;
-
+            
             isWallAhead = 0;//on effectue la mesure pour voir si il y a un mur devant ou si le mur à gauche/droite s'écarte d'un coup
             if ((Distance() < DISTWALL) || (Distance() - DISTWALL > 5)){ //à cause de l'erreur, ne peut pas "voir un angle entre 180° et 206°"
                 isWallAhead = 1;
