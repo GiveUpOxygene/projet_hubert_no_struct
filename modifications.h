@@ -18,7 +18,7 @@ void Rotate(int angle) //angle négatif : à gauche, angle positif : à droite
     }
 }
 
-void PutRobotParallele()
+float PutRobotParallele()
 {
     myservo.write(90);
     delay(300);
@@ -54,40 +54,45 @@ void PutRobotParallele()
 
 //pour les angles de 3° à 177°, utiliser la méthode pour tourner et se mettre parallèle au mur
 //pour les angles de 45° à 135°, utiliser la fonction angle définie dans useful_robot.h
-//pour les angles de 194° à 270°, utiliser le psudo-code
+//pour les angles de 194° à 270°, utiliser HalfBigAngle
 //pour les angles de 270° à 360°, ??????
 //les angles de 177° à 194° seront traités comme des erreurs de mesure
 
 void HalfBigAngle(){
-    forward(150);
-    if (DistDroite() > 2.5) {
-        float mesures_mur[8];
+    forward(150); //on avance un peu
+    delay(1000);
+    Stop();
+    if (DistDroite() > 2.5) { //si le mur s'écarte d'un coup
+        Rotate(90); //on se tourne vers le mur
+        float mesures_mur[8]; //on mesure l'angle
         MesureDist(105, 0, 8, mesures_mur);
         float mesures_coord[8][2];
         MesuresToCoord(mesures_mur, mesures_coord, 8);
         int new_angle = fabsf(Angle(mesures_coord, 8))
-        if ((new_angle > 195) || (new_angle < 175)) {
-            //calculer posVertex
-            //AddVertex
-        }
-        //méthode parallèle
-        Rotate(90);
-        //on se place à la bonne distance du mur
-        while(fabsf(dist - DISTWALL) > 4)
+        if ((new_angle > 195) || (new_angle < 175)) //si l'angle est supérieur à ce que l'on considère comme une erreur de mesure
         {
-          if(dist > DISTWALL)
-          {
-            forward(100);
-            delay(50); //delay différents pour ne pas être bloqué dans une boucle infinie
-            Stop();
-          }
-          else
-          {
-            back(100);
-            delay(75);
-            Stop();
-          }
-          dist = Distance_test();
+            //calculer posVertex TO DO      //on calcule la position du sommet et on l'ajoute à la carte
+            //AddVertex TO DO
+            new_angle = PutRobotParallele(); //on se place face au nouveau mur à suivre
+            Rotate(new_angle - 90);
+            //on se place à la bonne distance du mur (DISTWALL + 10 cm)
+            while(fabsf(dist - DISTWALL - 10) > 4)
+            {
+                if(dist > DISTWALL)
+                {
+                    forward(100);
+                    delay(50); //delay différents pour ne pas être bloqué dans une boucle infinie
+                    Stop();
+                }
+                else
+                {
+                    back(100);
+                    delay(75);
+                    Stop();
+                }
+                dist = Distance_test();
+            }
+            Rotate(-90);
         }
     }
 }
