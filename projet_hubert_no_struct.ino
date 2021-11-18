@@ -10,9 +10,10 @@
 
 #include "useful_robot.h"
 #include "geometry.h"
+#include <math.h>
 
-const float RANGEWALLDETECTION = 15;//au début on détecte le mur a suivre au départ si il est a tant de cm
-const float DISTWALL = 20;//la distance entre le robot et le mur.
+const float RANGEWALLDETECTION = 40;//au début on détecte le mur a suivre au départ si il est a tant de cm
+const float DISTWALL = 30;//la distance entre le robot et le mur.
 const float MAXSPEED = 15;//la vitesse du robot en cm/s
 const float dt = 16;// le temps en ms entre 2 fonction loop
 const int MAPMAXVERTICES = 100;
@@ -69,74 +70,101 @@ void setup() {
     myservo.write(90);
     position[0] = 0;
     position[1] = 0;
-    angle = M_PI / 2; // le robot
+    angle = 90; //le robot
     currentState = 0;
 }
 
-//debut de la loop
+
 void loop()
 {
+    int countCaptor = 0, indexAngleCaptor = 0, nbDistInfToRange = 0;
+    int angleCaptor[4] = { 75, 90, 105, 90 };
     switch (currentState)
     {
         case 0: //trouver un mur
             isWallAhead = 0;//mettre dans le booléen si le capteur détecte un mur à moins de RANGEWALLDETECTION
-            forward(200);
-            while (isWallAhead == 0) {
-                //delay(10*100 / MAXSPEED*10); //on mesure tous les 10 cm
-                //Stop();
-                if (Distance_test() < DISTWALL + 20){
-                    isWallAhead = 1;
+            forward(150);
+            countCaptor = 0;//Pour changer l'orientation du capteur
+            indexAngleCaptor = 0;
+            while (isWallAhead == 0)
+            {
+                countCaptor++;
+                if(countCaptor > 15)
+                {
+                    indexAngleCaptor = (indexAngleCaptor + 1) % 4;
+                    myservo.write(angleCaptor[indexAngleCaptor]);
+                    countCaptor = 0;
                 }
+                Serial.println(Distance());
+                if (Distance() < RANGEWALLDETECTION)
+                {
+                    nbDistInfToRange++;
+                    if(nbDistInfToRange >= 3)
+                    {
+                      isWallAhead = 1;
+                      break;
+                    }                    
+                }
+                else
+                {
+                  nbDistInfToRange = 0;
+                }
+                delay(dt);
             }
-            Stop();
-            delay(3000);
+            myservo.write(90);
             if(isWallAhead == 1)
             {
-                float dist = Distance_test();
-                /*
-                //on se replace à 15cm du mur
-                while(dist < DISTWALL){
-                    back(5);
-                    delay(50);
-                    dist = Distance_test();
+                //on se replace à DISTWALL +ou- 1 cm du mur
+                float dist = Distance();
+                //Le vérifie la véracité de la distance mesuré par le capteur, qui des fois "bug" lorsque un objet est trop près,
+                // le capteur renvoie une distance de plus de 1500 cm ce qui n'est pas cohérent avec la situation
+                if(dist > 1500)
+                {
+                    //Imposible de faire de mesure, on recule et on recommence
+                    back(150);
+                    Rotate(10);
+                    delay(1000);
+                    Stop();
+                    break;
                 }
-                Stop();
-                */
-                //On se place à DISTWALL -+ 4 cm
-                while(fabsf(dist - DISTWALL) > 4)
+
+                while(fabs(dist - DISTWALL) > 1)
                 {
                   if(dist > DISTWALL)
                   {
-                    forward(100);
-                    delay(50); //delay différents pour ne pas être bloqué dans une boucle infinie
+                    forward(150);
+                    delay(20);
                     Stop();
                   }
                   else
                   {
-                    back(100);
-                    delay(75);
+                    back(150);
+                    delay(20);
                     Stop();
                   }
-                  dist = Distance_test();
+                  dist = Distance();
                 }
                 Stop();
+                //On est bien placé en therme de distance, on place le robot // au mur avec lu mur à droite du robot car après on suivra le mur par la droite.
+                //On calcule l'angle de rotation pour que le robot soit bien orienté <=> // au mur.
+                PutRobotParallele();
+                
                 currentState = 1;
             }
             break;
         case 1: //suivre un mur
             Stop();
             break;
-            myservo.write(90);
-            delay(30);
-            isWallAhead = 0;//on effectue la mesure pour voir si il y a un mur devant ou si le mur à gauche s'écarte d'un coup
-            if ((Distance_test() < DISTWALL) || (DistDroite() - DISTWALL > 5)){ //à cause de l'erreur, ne peut pas "voir un angle entre 180° et 206°"
+            
+            isWallAhead = 0;//on effectue la mesure pour voir si il y a un mur devant ou si le mur à gauche/droite s'écarte d'un coup
+            if ((Distance() < DISTWALL) || (Distance() - DISTWALL > 5)){ //à cause de l'erreur, ne peut pas "voir un angle entre 180° et 206°"
                 isWallAhead = 1;
             }
 
             if(isWallAhead)
             {
                 Stop();
-                if (DistDroite() - DISTWALL > 5){
+                if (Distance() - DISTWALL > 5){
                     forward(255);
                     delay(10 / DISTWALL);
                     Rotate(90);
@@ -235,7 +263,10 @@ void loop()
             break;
         case 2: //carte finie
             //on tourne a l'infini pour dire que le robot est content
-            //TO DO:
+            while (1)
+            {
+                Rotate(180);
+            }
             break;
         default:
             break;

@@ -1,4 +1,5 @@
 #include <Servo.h>
+
 Servo myservo;
 
 int Echo = A4;
@@ -10,28 +11,28 @@ int Trig = A5;
 #define IN3 9
 #define IN4 11
 #define ENA 6
-#define VROT_DROITE 345 //en degré par seconde, mesurées à la main
-#define VROT_GAUCHE 345
+#define VROT_DROITE 210 //en degré par seconde, mesurées à la main
+#define VROT_GAUCHE 210
 
 
-void forward(int vit){
-    analogWrite(ENA,vit); //enable L298n A channel
-    analogWrite(ENB,vit); //enable L298n B channel
+void forward(int speed){
+    analogWrite(ENA,speed); //enable L298n A channel
+    analogWrite(ENB,speed); //enable L298n B channel
     digitalWrite(IN1,HIGH); //set IN1 hight level
     digitalWrite(IN2,LOW);    //set IN2 low level
     digitalWrite(IN3,LOW);    //set IN3 low level
     digitalWrite(IN4,HIGH); //set IN4 hight level
-    Serial.println("Forward");//send message to serial monitor
+    //Serial.println("Forward");//send message to serial monitor
 }
 
-void back(int vit){ //vit est un entier entre 0 et 255
-    analogWrite(ENA,vit);
-    analogWrite(ENB,vit);
+void back(int speed){ //vit est un entier entre 0 et 255
+    analogWrite(ENA,speed);
+    analogWrite(ENB,speed);
     digitalWrite(IN1,LOW);
     digitalWrite(IN2,HIGH);
     digitalWrite(IN3,HIGH);
     digitalWrite(IN4,LOW);
-    Serial.println("Back");
+    //Serial.println("Back");
 }
 
 void left(){
@@ -41,7 +42,7 @@ void left(){
     digitalWrite(IN2,HIGH);
     digitalWrite(IN3,LOW);
     digitalWrite(IN4,HIGH);
-    Serial.println("Left");
+    //Serial.println("Left");
 }
 
 void right(){
@@ -51,17 +52,17 @@ void right(){
     digitalWrite(IN2,LOW);
     digitalWrite(IN3,HIGH);
     digitalWrite(IN4,LOW);
-    Serial.println("Right");
+    //Serial.println("Right");
 }
 
 void Stop(){
-    digitalWrite(ENA, LOW);
-    digitalWrite(ENB, LOW);
+    analogWrite(ENA, 0);
+    analogWrite(ENB, 0);
     digitalWrite(IN1,LOW);
     digitalWrite(IN2,LOW);
     digitalWrite(IN3,LOW);
     digitalWrite(IN4,LOW);
-    Serial.println("Stop!");
+    //Serial.println("Stop!");
 }
 
 void Rotate(int angle) //angle négatif : à gauche, angle positif : à droite
@@ -76,39 +77,68 @@ void Rotate(int angle) //angle négatif : à gauche, angle positif : à droite
     {
         angle -= 360;
     }
+    analogWrite(ENA, 100);
+    analogWrite(ENB, 100);
     if (angle < 0) {
-        left();
-        delay((angle*100)/VROT_GAUCHE*10); //bizzarement, faire *1000 ne marche pas
+        right();
+        delay((-angle*100)/VROT_DROITE*10); //bizzarement, faire *1000 ne marche pas
         Stop();
     }
     else{
-        right();
-        delay((angle*100)/VROT_DROITE*10);
+        left();
+        delay((angle*100)/VROT_GAUCHE*10);
         Stop();
     }
+    analogWrite(ENA, 150);
+    analogWrite(ENB, 150);
 }
 
-float Distance_test() { //renvoie la distance en float entre le robot et un obstacle
+//Renvoie la distance entre le capteur et l'object devant le capteur.
+float Distance() 
+{
     digitalWrite(Trig, LOW);
     delayMicroseconds(2);
     digitalWrite(Trig, HIGH);
     delayMicroseconds(20);
     float Fdistance = pulseIn(Echo, HIGH);
-    Fdistance= Fdistance / 58;
+    Fdistance = Fdistance / 58;
     return Fdistance;
 }
 
-float DistDroite() {
-    myservo.write(0);
-    return Distance_test();
-}
+void PutRobotParallele()
+{
+    myservo.write(90);
+    delay(300);
+    float y = Distance();
+    myservo.write(180);//capteur vers la gauche
+    delay(700);
+    float x1 = Distance();
+    myservo.write(0);//capteur vers la droite
+    delay(700);
+    float x2 = Distance();
+    myservo.write(90);
 
-float MesureVitesse(){ //on suppose la vitesse en fonction du temps est constante
-    float d1 = Distance_test();
-    back(255);
-    delay(2000);
-    float d2 = Distance_test();
-    return (d2-d1)/2;
+    if(x1 > 70 && x2 > 70)
+    {
+        //Le robot est trop en face du mur pour faire au moins une mesure correct, on tourne pour recommencer les mesure
+        Rotate(25);
+        PutRobotParallele();
+    }
+    else
+    {
+        //Si x1 < x2 le mur est a gauche du robot, sinon il est a droite 
+        //Pour aller au plus simple on supp qu'on est pile devant.
+        if(x1 < x2)
+        {
+            float angToRot = 90 + ((atanf(y/x1) * 180)/M_PI);
+            Rotate(angToRot);
+        }
+        else
+        {
+            float angToRot = -90 - ((atanf(y/x2) * 180) / M_PI);
+            Rotate(angToRot);
+        }
+    }
 }
 
 //angle_deb et angle_fin sont des multiples des angles atteignables par le servo (donc multiples de 15)
@@ -117,6 +147,6 @@ void MesureDist(int angle_deb, int angle_fin, int nb_mesures, float mesures[]){
     for (int i = angle_deb; i < angle_fin; i += (angle_fin-angle_deb)/nb_mesures){
         myservo.write(i);
         delay(500);
-        mesures[(int)(nb_mesures-1 - 1/15 * i)] = Distance_test(); // l'indice est entier car i est un multiple de 15
+        mesures[(int)(nb_mesures-1 - 1/15 * i)] = Distance(); // l'indice est entier car i est un multiple de 15
     }
 }
