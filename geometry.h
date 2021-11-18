@@ -209,11 +209,11 @@ float Angle(float coord_mesures[][2], int longueur){
         vecteur_2[0] = coord_mesures[count_droite-2][0] - coord_mesures[count_droite-1][0];
         vecteur_2[1] = coord_mesures[count_droite-2][1] - coord_mesures[count_droite-1][1];
         count_droite --;
-    } while(IsCollinear(vecteur_1, vecteur_2); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
+    } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
     vecteur_1[0] = coord_mesures[0][0] - coord_mesures[count_gauche][0];
     vecteur_1[1] = coord_mesures[0][1] - coord_mesures[count_gauche][1];
     vecteur_2[0] = coord_mesures[longueur][0] - coord_mesures[count_droite][0];
     vecteur_2[1] = coord_mesures[longueur][1] - coord_mesures[count_droite][1];
     //on calcule l'angle entre les deux vecteurs directeurs en utilisant les deux formules du produit scalaire
-    return acosf((vecteur_1[0] * vecteur_2[0] + vecteur_1[1] * vecteur_2[1])/(sqrt(vecteur_1[0] * vecteur_1[0] + vecteur_1[1] * vecteur_1[1]) * sqrt(vecteur_2[0] * vecteur_2[0] + vecteur_2[1] * vecteur_2[1])));
+    return (int)acosf((vecteur_1[0] * vecteur_2[0] + vecteur_1[1] * vecteur_2[1])/(sqrt(vecteur_1[0] * vecteur_1[0] + vecteur_1[1] * vecteur_1[1]) * sqrt(vecteur_2[0] * vecteur_2[0] + vecteur_2[1] * vecteur_2[1])));
 }
