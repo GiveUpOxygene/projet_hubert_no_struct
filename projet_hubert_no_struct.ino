@@ -44,39 +44,10 @@ void AddVertex(float newVertex[], float map[][2], int vertexIndex) //rajoute un 
     map[vertexIndex][1] = newVertex[1];
 }
 
-//debut du setup
-
-void setup() {
-    //initialisation de la carte
-    vertexIndex = 1;
-    for (int i = 0; i < MAPMAXVERTICES; i++)
-    {
-        room[i][0] = 0;
-        room[i][1] = 0;
-    }
-    //fin d'initialisation
-    myservo.attach(3); // attach servo on pin 3 to servo object
-    Serial.begin(9600);//open serial and set the baudrate
-    pinMode(Echo, INPUT);
-    pinMode(Trig, OUTPUT);
-    pinMode(IN1,OUTPUT);//before using io pin, pin mode must be set first
-    pinMode(IN2,OUTPUT);
-    pinMode(IN3,OUTPUT);
-    pinMode(IN4,OUTPUT);
-    pinMode(ENA,OUTPUT); //acceleration
-    pinMode(ENB,OUTPUT);
-    Stop();
-    myservo.write(90);
-    position[0] = 0;
-    position[1] = 0;
-    angle = 90; //le robot
-    currentState = 0;
-}
-
 //pour les angles de 3° à 177°, utiliser la méthode pour tourner et se mettre parallèle au mur
 //pour les angles de 45° à 135°, utiliser la fonction angle définie dans useful_robot.h
 //pour les angles de 194° à 270°, utiliser HalfBigAngle
-//pour les angles de 270° à 360°, ??????
+//pour les angles de 270° à 360°, on ne peut pas mesure à cause des angles très restrictifs du servo et de l'imprécision due aux moteurs
 //les angles de 177° à 194° seront traités comme des erreurs de mesure
 
 void HalfBigAngle(){
@@ -157,6 +128,35 @@ void HalfBigAngle(){
             Rotate(-90);
         }
     }
+}
+
+//debut du setup
+
+void setup() {
+    //initialisation de la carte
+    vertexIndex = 1;
+    for (int i = 0; i < MAPMAXVERTICES; i++)
+    {
+        room[i][0] = 0;
+        room[i][1] = 0;
+    }
+    //fin d'initialisation
+    myservo.attach(3); // attach servo on pin 3 to servo object
+    Serial.begin(9600);//open serial and set the baudrate
+    pinMode(Echo, INPUT);
+    pinMode(Trig, OUTPUT);
+    pinMode(IN1,OUTPUT);//before using io pin, pin mode must be set first
+    pinMode(IN2,OUTPUT);
+    pinMode(IN3,OUTPUT);
+    pinMode(IN4,OUTPUT);
+    pinMode(ENA,OUTPUT); //acceleration
+    pinMode(ENB,OUTPUT);
+    Stop();
+    myservo.write(90);
+    position[0] = 0;
+    position[1] = 0;
+    angle = 90; //le robot
+    currentState = 0;
 }
 
 void loop()
