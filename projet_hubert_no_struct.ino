@@ -27,6 +27,9 @@ int isWallAhead = 0;
 float newWallDist = 0;
 int vertexIndex;
 float room[MAPMAXVERTICES][2];
+int oldDistWall = 0;
+float vitesse_robot = 0;
+float dist;
 
 //time en ms
 void Move(float time)
@@ -38,95 +41,61 @@ void Move(float time)
     }
 }
 
-void AddVertex(float newVertex[], float map[][2], int vertexIndex) //rajoute un vecteur à la carte
+void AddVertex(float newVertex[], float room[][2], int vertexIndex) //rajoute un vecteur à la carte
 {
-    map[vertexIndex][0] = newVertex[0];
-    map[vertexIndex][1] = newVertex[1];
+    room[vertexIndex][0] = newVertex[0];
+    room[vertexIndex][1] = newVertex[1];
 }
 
-//pour les angles de 3° à 177°, utiliser la méthode pour tourner et se mettre parallèle au mur
-//pour les angles de 45° à 135°, utiliser la fonction angle définie dans useful_robot.h
-//pour les angles de 194° à 270°, utiliser HalfBigAngle
-//pour les angles de 270° à 360°, on ne peut pas mesure à cause des angles très restrictifs du servo et de l'imprécision due aux moteurs
-//les angles de 177° à 194° seront traités comme des erreurs de mesure
-
-void HalfBigAngle(){
-    forward(150); //on avance un peu
-    myservo.write(0);//capteur vers la droite
-    delay(1000);
-    Stop();
-    if (Distance() > 2.5) { //si le mur s'écarte d'un coup
-        Rotate(90); //on se tourne vers le mur
-        float mesures_mur[8]; //on mesure l'angle
-        MesureDist(105, 0, 8, mesures_mur);
-        float mesures_coord[8][2];
-        MesuresToCoord(mesures_mur, mesures_coord, 8);
-        int new_angle = fabsf(Angle(mesures_coord, 8));
-        if ((new_angle > 195) || (new_angle < 175)) //si l'angle est supérieur à ce que l'on considère comme une erreur de mesure
+int CalculateVertexPosition(float vertexPosition[2]){
+    Rotate(90); //on se tourne vers le mur
+    float mesures_mur[8]; //on mesure l'angle
+    MesureDist(105, 0, 8, mesures_mur);
+    float mesures_coord[8][2];
+    MesuresToCoord(mesures_mur, mesures_coord, 8);
+    int new_angle = fabsf(Angle(mesures_coord, 8));
+    if ((new_angle > 195) || (new_angle < 175)) //si l'angle est supérieur à ce que l'on considère comme une erreur de mesure
+    {
+        //On récupère les vecteur directeur des 2 murs.
+        float vecteur_1[2];
+        float vecteur_2[2];
+        int count_gauche = 0;
+        int count_droite = 8;
+        //on regarde le plus grand vecteur directeur du mur de gauche (face au robot)
+        do {
+            vecteur_1[0] = mesures_coord[count_gauche+1][0] - mesures_coord[count_gauche][0];
+            vecteur_1[1] = mesures_coord[count_gauche+1][1] - mesures_coord[count_gauche][1];
+            vecteur_2[0] = mesures_coord[count_gauche+2][0] - mesures_coord[count_gauche+1][0];
+            vecteur_2[1] = mesures_coord[count_gauche+2][1] - mesures_coord[count_gauche+1][1];
+            count_gauche ++;
+        } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
+        //on regarde le plus grand vecteur directeur du mur de droite (celui suivi jusqu'à maintenant)
+        do {
+            vecteur_1[0] = mesures_coord[count_droite-1][0] - mesures_coord[count_droite][0];
+            vecteur_1[1] = mesures_coord[count_droite-1][1] - mesures_coord[count_droite][1];
+            vecteur_2[0] = mesures_coord[count_droite-2][0] - mesures_coord[count_droite-1][0];
+            vecteur_2[1] = mesures_coord[count_droite-2][1] - mesures_coord[count_droite-1][1];
+            count_droite --;
+        } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
+        vertexPosition[0] = 0;
+        vertexPosition[1] = 0;
+        //On se remet a la position initiale avant de retourner si oui ou non on a réussie a calculer le nouveau sommet
+        Rotate(-90);
+        float seg1[2][2];
+        float seg2[2][2];
+        seg1[0][0] = mesures_coord[0][0];
+        seg1[0][1] = mesures_coord[0][1];
+        seg1[1][0] = mesures_coord[count_gauche][0];
+        seg1[1][1] = mesures_coord[count_gauche][1];
+        seg2[0][0] = mesures_coord[7][0];
+        seg2[0][1] = mesures_coord[7][1];
+        seg2[1][0] = mesures_coord[count_droite][0];
+        seg2[1][1] = mesures_coord[count_droite][1];
+        if(Intersect(seg1, seg2, vertexPosition))
         {
-            //calculer posVertex TO DO      //on calcule la position du sommet et on l'ajoute à la carte
-            //AddVertex TO DO
-
-            //On récupère les vecteur directeur des 2 murs.
-            float vecteur_1[2];
-            float vecteur_2[2];
-            int count_gauche = 0;
-            int count_droite = 8;
-            //on regarde le plus grand vecteur directeur du mur de gauche (face au robot)
-            do {
-                vecteur_1[0] = mesures_coord[count_gauche+1][0] - mesures_coord[count_gauche][0];
-                vecteur_1[1] = mesures_coord[count_gauche+1][1] - mesures_coord[count_gauche][1];
-                vecteur_2[0] = mesures_coord[count_gauche+2][0] - mesures_coord[count_gauche+1][0];
-                vecteur_2[1] = mesures_coord[count_gauche+2][1] - mesures_coord[count_gauche+1][1];
-                count_gauche ++;
-            } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
-            //on regarde le plus grand vecteur directeur du mur de droite (celui suivi jusqu'à maintenant)
-            do {
-                vecteur_1[0] = mesures_coord[count_droite-1][0] - mesures_coord[count_droite][0];
-                vecteur_1[1] = mesures_coord[count_droite-1][1] - mesures_coord[count_droite][1];
-                vecteur_2[0] = mesures_coord[count_droite-2][0] - mesures_coord[count_droite-1][0];
-                vecteur_2[1] = mesures_coord[count_droite-2][1] - mesures_coord[count_droite-1][1];
-                count_droite --;
-            } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
-            float vertex[2];
-            float seg1[2][2];
-            float seg2[2][2];
-            seg1[0][0] = mesures_coord[0][0];
-            seg1[0][0] = mesures_coord[0][1];
-            seg1[0][0] = mesures_coord[count_gauche][0];
-            seg1[0][0] = mesures_coord[count_gauche][1];
-            seg2[0][0] = mesures_coord[8 - 1][0];
-            seg2[0][0] = mesures_coord[8 - 1][1];
-            seg2[0][0] = mesures_coord[count_droite][0];
-            seg2[0][0] = mesures_coord[count_droite][1];
-            if(Intersect(seg1, seg2, vertex))
-            {
-                AddVertex(vertex, room, vertexIndex);
-                vertexIndex++;
-            }
-
-            new_angle = PutRobotParallele(); //on se place face au nouveau mur à suivre
-            Rotate(new_angle - 90);
-            float dist = Distance();
-            //on se place à la bonne distance du mur (DISTWALL + 10 cm)
-            while(fabsf(dist - DISTWALL - 10) > 4)
-            {
-                if(dist > DISTWALL)
-                {
-                    forward(100);
-                    delay(50); //delay différents pour ne pas être bloqué dans une boucle infinie
-                    Stop();
-                }
-                else
-                {
-                    back(100);
-                    delay(75);
-                    Stop();
-                }
-                dist = Distance();
-            }
-            Rotate(-90);
+            return 1;
         }
+        return 0;
     }
 }
 
@@ -159,10 +128,15 @@ void setup() {
     currentState = 0;
 }
 
+
+
 void loop()
 {
+    //etat 1
     int countCaptor = 0, indexAngleCaptor = 0, nbDistInfToRange = 0;
     int angleCaptor[4] = { 75, 90, 105, 90 };
+    //etat 2
+
     switch (currentState)
     {
         case 0: //trouver un mur
@@ -198,6 +172,10 @@ void loop()
             myservo.write(90);
             if(isWallAhead == 1)
             {
+                if (vitesse_robot == 0)
+                {
+
+                }
                 //on se replace à DISTWALL +ou- 1 cm du mur
                 float dist = Distance();
                 //Le vérifie la véracité de la distance mesuré par le capteur, qui des fois "bug" lorsque un objet est trop près,
@@ -234,34 +212,31 @@ void loop()
                 PutRobotParallele();
                 //on avance pour commencer l'étape 2
                 forward(150);
+                myservo.write(0);
                 currentState = 1;
             }
             break;
         case 1: //suivre un mur
 
             isWallAhead = 0;//on effectue la mesure pour voir si il y a un mur devant ou si le mur à gauche/droite s'écarte d'un coup
-            if ((Distance() < DISTWALL) || (Distance() - DISTWALL > 5)){ //à cause de l'erreur, ne peut pas "voir un angle entre 180° et 206°"
+            myservo.write(0);
+            delay(500);
+            Move(500);
+            dist = Distance();
+            if (fabs(dist - DISTWALL) - oldDistWall > 2.5){ //à cause de l'erreur, ne peut pas "voir un angle entre 180° et 206°"
                 isWallAhead = 1;
             }
+            oldDistWall = fabs(dist - DISTWALL);
 
             if(isWallAhead)
             {
                 Stop();
-                if (Distance() - DISTWALL > 5){
-                    forward(255);
-                    delay(10 / DISTWALL);
-                    Rotate(90);
-                }
                 //on mesure la position du sommet (avec les points sur le mur puis régression affine puis calcul d'intersection)
                 float mesures_mur[8];
                 MesureDist(105, 0, 8, mesures_mur);
                 float mesures_coord[8][2];
                 MesuresToCoord(mesures_mur, mesures_coord, 8);
                 int newAngle = Angle(mesures_coord, 8);
-                /*float segment_gauche[2][2];
-                float segment_droite[2][2];
-                ToSegment();
-                ToSegment();*/
 
                 float newVertexPosition[2]; //on mettra les coordonnées dans ce vecteur
                 //On regarde si c'est le premier sommet, si oui on définit le Repère orthonormé
@@ -270,40 +245,79 @@ void loop()
                     isRepereSet = 1;
                     newVertexPosition[0] = 0;
                     newVertexPosition[1] = 0;
-                    //On mesure l'angle pour suivre le mur
-                    int newAngle = 0; //Mesurer l'angle a prendre
+                    //On tourne pour suivre le mur
                     Rotate(newAngle);
                     angle = 0;
                 }
                 else
                 {
                     //On calcule la position du nouveau vertex
-                    newVertexPosition[0] = 0;
-                    newVertexPosition[1] = 0;
-                    //On regarde si on est revenu au départ
-                    float distNewVertexOrigin = sqrtf(newVertexPosition[0] * newVertexPosition[0] + newVertexPosition[1] * newVertexPosition[1]);
-                    if(distNewVertexOrigin < 20)//on a retrouvé l'origine, in a fini la cartographie
+                    if(CalculateVertexPosition(newVertexPosition))
                     {
-                        currentState = 2;
-                        break;
+                        //On regarde si on est revenu au départ
+                        float distNewVertexOrigin = sqrtf(newVertexPosition[0] * newVertexPosition[0] + newVertexPosition[1] * newVertexPosition[1]);
+                        if(distNewVertexOrigin < 20)//on a retrouvé l'origine, in a fini la cartographie
+                        {
+                            currentState = 2;
+                            break;
+                        }
+                        //On tourne pour suivre le mur
+                        Rotate(newAngle);
+                        angle += newAngle;
                     }
-                    //On mesure l'angle pour suivre le mur
-                    float newAngle = 0;//Mesuré l'angle a prendre
-                    Rotate(newAngle);
                 }
                 AddVertex(newVertexPosition, room, vertexIndex);
-                vertexIndex++;
                 //On repart
+                //On se remet a une distance WALLDISTANCE du mur.
+
+                //TODO
+
                 currentState = 1;
-                forward(255);
+                forward(150);
                 delay(100);
+                Move(100);
                 break;
             }
 
-            //on regarde sur le côté si on s'éloigne rapidement du mur
-            newWallDist = 0;//faire la mesure
-            if(fabsf(newWallDist - oldWallDist) > 2 * DISTWALL)//Constante à droite surement à modifier
+            //on regarde si il y a un mur devant
+            myservo.write(90);
+            delay(500);
+            Move(500);
+            if(Distance() < RANGEWALLDETECTION)//Constante à droite surement à modifier
             {
+                //On se met à la bonne distance du mur, donc DISTWALL
+                dist = Distance();
+                //Le vérifie la véracité de la distance mesuré par le capteur, qui des fois "bug" lorsque un objet est trop près,
+                // le capteur renvoie une distance de plus de 1500 cm ce qui n'est pas cohérent avec la situation
+                if(dist > 1500)
+                {
+                    //Imposible de faire de mesure, on recule et on recommence
+                    back(150);
+                    Rotate(10);
+                    delay(1000);
+                    Move(1000);
+                    Stop();
+                    break;
+                }
+
+                while(fabs(dist - DISTWALL) > 1)
+                {
+                  if(dist > DISTWALL)
+                  {
+                    forward(150);
+                    delay(20);
+                    Stop();
+                  }
+                  else
+                  {
+                    back(150);
+                    delay(22);
+                    Stop();
+                  }
+                  dist = Distance();
+                }
+                Stop();
+
                 //on a trouvé un nouveau sommet, on calcule sa position
                 float newVertexPosition[2];//on mettera les coors dans ce vecteur
                 //On regarde si c'est le premier sommet
@@ -326,6 +340,11 @@ void loop()
                         currentState = 2;
                         break;
                     }
+
+                    //On calcule la position du Vertex et on tourne de pourcontinuer la cartographie
+
+                    //TODO :
+
                     //On mesure l'angle pour suivre le mur
                     float newAngle = 0;//Mesuré l'angle a prendre
                     Rotate(newAngle);
@@ -335,8 +354,9 @@ void loop()
                 //On repart
                 vertexIndex++;
                 currentState = 1;
-                forward(255);
+                forward(150);
                 delay(100);
+                Move(100);
                 break;
             }
 

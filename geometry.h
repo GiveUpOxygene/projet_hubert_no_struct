@@ -32,19 +32,21 @@ float RandFloat(float a, float b)
 }
 
 //coord_pol = [r, téta] est l'entrée et coord_cart = [x, y] est renvoyée. coord_cart est censée etre vide en début de fonction.
-void PolaireToCart(float coord_pol[], float coord_cart[]){
+void PolarToCart(float coord_pol[], float coord_cart[])
+{
     coord_cart[0] = coord_pol[0] * cosf(coord_pol[1]);
     coord_cart[1] = coord_pol[0] * sinf(coord_pol[1]);
 }
 
 //coord_cart = [x, y] est l'entrée et coord_pol = [r, téta] est renvoyée. coord_pol est censée etre vide en début de fonction.
-void CartToPolaire(float coord_cart[], float coord_pol[])
+void CartToPolar(float coord_cart[], float coord_pol[])
 {
     coord_pol[0] = sqrtf((coord_cart[0] * coord_cart[0]) + (coord_cart[1] * coord_cart[1]));
     coord_pol[1] = 2 * atanf(coord_cart[1]/(coord_cart[0] + (coord_pol[0])));
 }
 
-void AddVect(float coord_cart[][2], int longueur, float somme_vect[]){
+void AddVect(float coord_cart[][2], int longueur, float somme_vect[])
+{
     //coord_cart est un tableau de vecteurs avec tous les vecteurs à additionner. tous les vecteurs doivent etre en coordonnées cartésiennes.
     //longueur est la longueur de ce tableau
     //somme_vect est le résultat de cette addition, vide au début de la fonction
@@ -56,7 +58,9 @@ void AddVect(float coord_cart[][2], int longueur, float somme_vect[]){
     }
 }
 
-void MesuresToCoord(float mesures[], float coord_mesures[][2], int longueur){//0 :=> 90°, i => 15*i+90 °
+void MesuresToCoord(float mesures[], float coord_mesures[][2], int longueur)
+{
+//0 :=> 90°, i => 15*i+90 °
     //mesures est un tableau contenant toutes les distance mesurées. l'angle correspondant est 105 - [indice] * 15 en degrés
     //coord_mesures est un tableau qui contient toutes les coordonnées des points du mur où la distance a été mesurées.
     //longueur est la longueur du tableau mesures
@@ -166,7 +170,8 @@ int Intersect(const float seg1[][2], const float seg2[][2], float intersectionPo
     return 1;
 }
 
-float Angle(float coord_mesures[][2], int longueur){
+float Angle(float coord_mesures[][2], int longueur)
+{
     //calcule l'angle en fonction des données du capteur.
     //coord_mesures est un tableau qui contient toutes les coordonnées des points du mur où la distance a été mesurée.
     //longueur est la longueur de ce tableau

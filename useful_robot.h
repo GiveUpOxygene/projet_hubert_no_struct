@@ -15,7 +15,8 @@ int Trig = A5;
 #define VROT_GAUCHE 210
 
 
-void forward(int speed){
+void forward(int speed)
+{
     analogWrite(ENA,speed); //enable L298n A channel
     analogWrite(ENB,speed); //enable L298n B channel
     digitalWrite(IN1,HIGH); //set IN1 hight level
@@ -25,7 +26,8 @@ void forward(int speed){
     //Serial.println("Forward");//send message to serial monitor
 }
 
-void back(int speed){ //vit est un entier entre 0 et 255
+void back(int speed)
+{ //vit est un entier entre 0 et 255
     analogWrite(ENA,speed);
     analogWrite(ENB,speed);
     digitalWrite(IN1,LOW);
@@ -35,7 +37,8 @@ void back(int speed){ //vit est un entier entre 0 et 255
     //Serial.println("Back");
 }
 
-void left(){
+void left()
+{
     digitalWrite(ENA,HIGH);
     digitalWrite(ENB,HIGH);
     digitalWrite(IN1,LOW);
@@ -45,7 +48,8 @@ void left(){
     //Serial.println("Left");
 }
 
-void right(){
+void right()
+{
     digitalWrite(ENA,HIGH);
     digitalWrite(ENB,HIGH);
     digitalWrite(IN1,HIGH);
@@ -55,7 +59,8 @@ void right(){
     //Serial.println("Right");
 }
 
-void Stop(){
+void Stop()
+{
     analogWrite(ENA, 0);
     analogWrite(ENB, 0);
     digitalWrite(IN1,LOW);
@@ -94,7 +99,7 @@ void Rotate(int angle) //angle négatif : à gauche, angle positif : à droite
 }
 
 //Renvoie la distance entre le capteur et l'object devant le capteur.
-float Distance() 
+float Distance()
 {
     digitalWrite(Trig, LOW);
     delayMicroseconds(2);
@@ -126,7 +131,7 @@ float Distance()
     }
     else
     {
-        //Si x1 < x2 le mur est a gauche du robot, sinon il est a droite 
+        //Si x1 < x2 le mur est a gauche du robot, sinon il est a droite
         //Pour aller au plus simple on supp qu'on est pile devant.
         if(x1 < x2)
         {
@@ -177,11 +182,22 @@ float PutRobotParallele()
 }
 
 //angle_deb et angle_fin sont des multiples des angles atteignables par le servo (donc multiples de 15)
-void MesureDist(int angle_deb, int angle_fin, int nb_mesures, float mesures[]){
+void MesureDist(int angle_deb, int angle_fin, int nb_mesures, float mesures[])
+{
     //mesures[] contiendra l'ensemble des mesures faites pendant la boucle en fin de fonction
-    for (int i = angle_deb; i < angle_fin; i += (angle_fin-angle_deb)/nb_mesures){
+    for (int i = angle_deb; i < angle_fin; i += (angle_fin-angle_deb)/nb_mesures)
+    {
         myservo.write(i);
         delay(500);
         mesures[(int)(nb_mesures-1 - 1/15 * i)] = Distance(); // l'indice est entier car i est un multiple de 15
     }
+}
+
+float mesure_vitesse()
+{
+    float mesure1 = Distance();
+    back(150);
+    delay(3000);
+    Stop();
+    return ((Distance()-mesure1)/3);
 }
