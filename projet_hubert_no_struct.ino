@@ -10,9 +10,8 @@
 
 #include "useful_robot.h"
 #include "geometry.h"
-#include <math.h>
 
-const float RANGEWALLDETECTION = 40;//au début on détecte le mur a suivre au départ si il est a tant de cm
+const float RANGEWALLDETECTION = 40;//au début on détecte le mur a suivre au départ si il est à tant de cm
 const float DISTWALL = 30;//la distance entre le robot et le mur.
 const float MAXSPEED = 15;//la vitesse du robot en cm/s
 const float dt = 16;// le temps en ms entre 2 fonction loop
@@ -26,7 +25,7 @@ float oldWallDist = 0;
 int isWallAhead = 0;
 float newWallDist = 0;
 int vertexIndex;
-float room[MAPMAXVERTICES][2];
+float room[MAPMAXVERTICES][2]; //tableau contenant les coordonnées des coins de la pièce
 int oldDistWall = 0;
 float vitesse_robot = 0;
 float dist;
@@ -147,7 +146,7 @@ void loop()
             while (isWallAhead == 0)
             {
                 countCaptor++;
-                if(countCaptor > 15)
+                if(countCaptor > 15) //on fait bouger le capteur en permanence pour être sur de ne pas rentrer dans le mur
                 {
                     indexAngleCaptor = (indexAngleCaptor + 1) % 4;
                     myservo.write(angleCaptor[indexAngleCaptor]);
@@ -158,6 +157,8 @@ void loop()
                 {
                     nbDistInfToRange++;
                     if(nbDistInfToRange >= 3)
+                    //à cause du capteur qui bouge en permanence, les valeurs peuvent être faussées
+                    //on regarde donc si trois valeurs d'affilé sont bonnes
                     {
                       isWallAhead = 1;
                       break;
@@ -174,7 +175,7 @@ void loop()
             {
                 if (vitesse_robot == 0)
                 {
-
+                    vitesse_robot = mesure_vitesse();
                 }
                 //on se replace à DISTWALL +ou- 1 cm du mur
                 float dist = Distance();
@@ -192,10 +193,11 @@ void loop()
 
                 while(fabs(dist - DISTWALL) > 1)
                 {
+                  //on replace le robot à la bonne distance du mur
                   if(dist > DISTWALL)
                   {
                     forward(150);
-                    delay(20);
+                    delay(30); //delay différents pour éviter une boucle infinie
                     Stop();
                   }
                   else
@@ -343,7 +345,48 @@ void loop()
 
                     //On calcule la position du Vertex et on tourne de pourcontinuer la cartographie
 
-                    //TODO :
+                    float mesure[8];
+                    //On fait les mesures
+                    MesureDist(105, 30, 8, mesure);
+                    float vector_1[2];
+                    float vector_2[2];
+                    int count_left = 0;
+                    int count_right = 7;
+                    //On cacule les coor des points des murs
+                    float coord_mesures[8][2];
+                    MesuresToCoord(mesure, coord_mesures, 8);
+                    //on regarde le plus grand vecteur directeur du mur de gauche (face au robot)
+                    do {
+                        vector_1[0] = coord_mesures[count_left+1][0] - coord_mesures[count_left][0];
+                        vector_1[1] = coord_mesures[count_left+1][1] - coord_mesures[count_left][1];
+                        vector_2[0] = coord_mesures[count_left+2][0] - coord_mesures[count_left+1][0];
+                        vector_2[1] = coord_mesures[count_left+2][1] - coord_mesures[count_left+1][1];
+                        count_left ++;
+                    } while(IsCollinear(vector_1, vector_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
+                    //on regarde le plus grand vecteur directeur du mur de droite (celui suivi jusqu'à maintenant)
+                    do {
+                        vector_1[0] = coord_mesures[count_right-1][0] - coord_mesures[count_right][0];
+                        vector_1[1] = coord_mesures[count_right-1][1] - coord_mesures[count_right][1];
+                        vector_2[0] = coord_mesures[count_right-2][0] - coord_mesures[count_right-1][0];
+                        vector_2[1] = coord_mesures[count_right-2][1] - coord_mesures[count_right-1][1];
+                        count_right --;
+                    } while(IsCollinear(vector_1, vector_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
+                    //On calcule les segment de tendances
+                    float pointsForSeg1[8][2];
+                    float pointsForSeg2[8][2];
+                    for (size_t i = 0; i < count_left; i++) {
+                        pointsForSeg1[i][0] = coord_mesures[i][0];
+                        pointsForSeg1[i][1] = coord_mesures[i][1];
+                    }
+                    for (int i = count_right; i < 8; i++) {
+                        pointsForSeg2[i][0] = coord_mesures[i][0];
+                        pointsForSeg2[i][1] = coord_mesures[i][1];
+                    }
+                    float seg1[2][2];
+                    ToSegment(pointsForSeg1, count_left, seg1);
+                    float seg2[2][2];
+                    ToSegment(pointsForSeg2, 8 - count_right, seg2);
+                    Intersect(seg1, seg2, newVertexPosition);
 
                     //On mesure l'angle pour suivre le mur
                     float newAngle = 0;//Mesuré l'angle a prendre

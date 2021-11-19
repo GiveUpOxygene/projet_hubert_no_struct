@@ -45,29 +45,28 @@ void CartToPolar(float coord_cart[], float coord_pol[])
     coord_pol[1] = 2 * atanf(coord_cart[1]/(coord_cart[0] + (coord_pol[0])));
 }
 
-void AddVect(float coord_cart[][2], int longueur, float somme_vect[])
+void AddVect(float coord_cart[][2], int length, float somme_vect[])
 {
     //coord_cart est un tableau de vecteurs avec tous les vecteurs à additionner. tous les vecteurs doivent etre en coordonnées cartésiennes.
-    //longueur est la longueur de ce tableau
+    //length est la longueur de ce tableau
     //somme_vect est le résultat de cette addition, vide au début de la fonction
     somme_vect[0] = 0;
     somme_vect[1] = 0;
-    for (int i = 0; i < longueur; i++) {
+    for (int i = 0; i < length; i++) {
         somme_vect[0] += coord_cart[i][0];
         somme_vect[1] += coord_cart[i][1];
     }
 }
 
-void MesuresToCoord(float mesures[], float coord_mesures[][2], int longueur)
+void MesuresToCoord(float mesures[], float coord_mesures[][2], int length)
 {
-//0 :=> 90°, i => 15*i+90 °
     //mesures est un tableau contenant toutes les distance mesurées. l'angle correspondant est 105 - [indice] * 15 en degrés
     //coord_mesures est un tableau qui contient toutes les coordonnées des points du mur où la distance a été mesurées.
-    //longueur est la longueur du tableau mesures
+    //length est la longueur du tableau mesures
     //Le point (0,0) est le capteur
     //premier angle de mesure : 105°
     //dernier angle de mesure : 0°
-    for (int i = 0; i < longueur; i++) {
+    for (int i = 0; i < length; i++) {
         coord_mesures[i][0] = mesures[i] * cosf((105 - i * 15)*M_PI/180);
         coord_mesures[i][1] = mesures[i] * sinf((105 - i * 15)*M_PI/180);
     }
@@ -170,35 +169,35 @@ int Intersect(const float seg1[][2], const float seg2[][2], float intersectionPo
     return 1;
 }
 
-float Angle(float coord_mesures[][2], int longueur)
+float Angle(float coord_mesures[][2], int length)
 {
     //calcule l'angle en fonction des données du capteur.
     //coord_mesures est un tableau qui contient toutes les coordonnées des points du mur où la distance a été mesurée.
-    //longueur est la longueur de ce tableau
-    float vecteur_1[2];
-    float vecteur_2[2];
-    int count_gauche = 0;
-    int count_droite = longueur;
+    //length est la longueur de ce tableau
+    float vector_1[2];
+    float vector_2[2];
+    int count_left = 0;
+    int count_right = length;
     //on regarde le plus grand vecteur directeur du mur de gauche (face au robot)
     do {
-        vecteur_1[0] = coord_mesures[count_gauche+1][0] - coord_mesures[count_gauche][0];
-        vecteur_1[1] = coord_mesures[count_gauche+1][1] - coord_mesures[count_gauche][1];
-        vecteur_2[0] = coord_mesures[count_gauche+2][0] - coord_mesures[count_gauche+1][0];
-        vecteur_2[1] = coord_mesures[count_gauche+2][1] - coord_mesures[count_gauche+1][1];
-        count_gauche ++;
-    } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
+        vector_1[0] = coord_mesures[count_left+1][0] - coord_mesures[count_left][0];
+        vector_1[1] = coord_mesures[count_left+1][1] - coord_mesures[count_left][1];
+        vector_2[0] = coord_mesures[count_left+2][0] - coord_mesures[count_left+1][0];
+        vector_2[1] = coord_mesures[count_left+2][1] - coord_mesures[count_left+1][1];
+        count_left ++;
+    } while(IsCollinear(vector_1, vector_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
     //on regarde le plus grand vecteur directeur du mur de droite (celui suivi jusqu'à maintenant)
     do {
-        vecteur_1[0] = coord_mesures[count_droite-1][0] - coord_mesures[count_droite][0];
-        vecteur_1[1] = coord_mesures[count_droite-1][1] - coord_mesures[count_droite][1];
-        vecteur_2[0] = coord_mesures[count_droite-2][0] - coord_mesures[count_droite-1][0];
-        vecteur_2[1] = coord_mesures[count_droite-2][1] - coord_mesures[count_droite-1][1];
-        count_droite --;
-    } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
-    vecteur_1[0] = coord_mesures[0][0] - coord_mesures[count_gauche][0];
-    vecteur_1[1] = coord_mesures[0][1] - coord_mesures[count_gauche][1];
-    vecteur_2[0] = coord_mesures[longueur][0] - coord_mesures[count_droite][0];
-    vecteur_2[1] = coord_mesures[longueur][1] - coord_mesures[count_droite][1];
+        vector_1[0] = coord_mesures[count_right-1][0] - coord_mesures[count_right][0];
+        vector_1[1] = coord_mesures[count_right-1][1] - coord_mesures[count_right][1];
+        vector_2[0] = coord_mesures[count_right-2][0] - coord_mesures[count_right-1][0];
+        vector_2[1] = coord_mesures[count_right-2][1] - coord_mesures[count_right-1][1];
+        count_right --;
+    } while(IsCollinear(vector_1, vector_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
+    vector_1[0] = coord_mesures[0][0] - coord_mesures[count_left][0];
+    vector_1[1] = coord_mesures[0][1] - coord_mesures[count_left][1];
+    vector_2[0] = coord_mesures[length][0] - coord_mesures[count_right][0];
+    vector_2[1] = coord_mesures[length][1] - coord_mesures[count_right][1];
     //on calcule l'angle entre les deux vecteurs directeurs en utilisant les deux formules du produit scalaire
-    return (int)acosf((vecteur_1[0] * vecteur_2[0] + vecteur_1[1] * vecteur_2[1])/(sqrt(vecteur_1[0] * vecteur_1[0] + vecteur_1[1] * vecteur_1[1]) * sqrt(vecteur_2[0] * vecteur_2[0] + vecteur_2[1] * vecteur_2[1])));
+    return (int)acosf((vector_1[0] * vector_2[0] + vector_1[1] * vector_2[1])/(sqrt(vector_1[0] * vector_1[0] + vector_1[1] * vector_1[1]) * sqrt(vector_2[0] * vector_2[0] + vector_2[1] * vector_2[1])));
 }
