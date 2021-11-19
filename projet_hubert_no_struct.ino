@@ -38,11 +38,10 @@ void Move(float time)
     }
 }
 
-void AddVertex(float newVertex[], float map[][2]) //rajoute un vecteur à la carte
+void AddVertex(float newVertex[], float map[][2], int vertexIndex) //rajoute un vecteur à la carte
 {
     map[vertexIndex][0] = newVertex[0];
     map[vertexIndex][1] = newVertex[1];
-    vertexIndex++;
 }
 
 //debut du setup
@@ -91,7 +90,7 @@ void HalfBigAngle(){
         MesureDist(105, 0, 8, mesures_mur);
         float mesures_coord[8][2];
         MesuresToCoord(mesures_mur, mesures_coord, 8);
-        int new_angle = fabsf(Angle(mesures_coord, 8))
+        int new_angle = fabsf(Angle(mesures_coord, 8));
         if ((new_angle > 195) || (new_angle < 175)) //si l'angle est supérieur à ce que l'on considère comme une erreur de mesure
         {
             //calculer posVertex TO DO      //on calcule la position du sommet et on l'ajoute à la carte
@@ -101,7 +100,7 @@ void HalfBigAngle(){
             float vecteur_1[2];
             float vecteur_2[2];
             int count_gauche = 0;
-            int count_droite = longueur;
+            int count_droite = 8;
             //on regarde le plus grand vecteur directeur du mur de gauche (face au robot)
             do {
                 vecteur_1[0] = mesures_coord[count_gauche+1][0] - mesures_coord[count_gauche][0];
@@ -119,13 +118,25 @@ void HalfBigAngle(){
                 count_droite --;
             } while(IsCollinear(vecteur_1, vecteur_2)); //on effectue jusqu'à ce que les vecteurs ne soient plus collinéaires
             float vertex[2];
-            if(Intersect(mesures_coord[0], mesures_coord[count_gauche], mesures_coord[longueur - 1], mesures_coord[count_droite], vertex))
+            float seg1[2][2];
+            float seg2[2][2];
+            seg1[0][0] = mesures_coord[0][0];
+            seg1[0][0] = mesures_coord[0][1];
+            seg1[0][0] = mesures_coord[count_gauche][0];
+            seg1[0][0] = mesures_coord[count_gauche][1];
+            seg2[0][0] = mesures_coord[8 - 1][0];
+            seg2[0][0] = mesures_coord[8 - 1][1];
+            seg2[0][0] = mesures_coord[count_droite][0];
+            seg2[0][0] = mesures_coord[count_droite][1];
+            if(Intersect(seg1, seg2, vertex))
             {
-                AddVertex(vertex);
+                AddVertex(vertex, room, vertexIndex);
+                vertexIndex++;
             }
 
             new_angle = PutRobotParallele(); //on se place face au nouveau mur à suivre
             Rotate(new_angle - 90);
+            float dist = Distance();
             //on se place à la bonne distance du mur (DISTWALL + 10 cm)
             while(fabsf(dist - DISTWALL - 10) > 4)
             {
@@ -176,7 +187,7 @@ void loop()
                     {
                       isWallAhead = 1;
                       break;
-                    }                    
+                    }
                 }
                 else
                 {
@@ -222,12 +233,12 @@ void loop()
                 //On calcule l'angle de rotation pour que le robot soit bien orienté <=> // au mur.
                 PutRobotParallele();
                 //on avance pour commencer l'étape 2
-                forward();
+                forward(150);
                 currentState = 1;
             }
             break;
         case 1: //suivre un mur
-            
+
             isWallAhead = 0;//on effectue la mesure pour voir si il y a un mur devant ou si le mur à gauche/droite s'écarte d'un coup
             if ((Distance() < DISTWALL) || (Distance() - DISTWALL > 5)){ //à cause de l'erreur, ne peut pas "voir un angle entre 180° et 206°"
                 isWallAhead = 1;
@@ -281,6 +292,7 @@ void loop()
                     Rotate(newAngle);
                 }
                 AddVertex(newVertexPosition, room, vertexIndex);
+                vertexIndex++;
                 //On repart
                 currentState = 1;
                 forward(255);

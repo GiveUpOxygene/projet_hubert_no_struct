@@ -105,7 +105,7 @@ float Distance()
     return Fdistance;
 }
 
-void PutRobotParallele()
+/*void PutRobotParallele()
 {
     myservo.write(90);
     delay(300);
@@ -137,6 +137,41 @@ void PutRobotParallele()
         {
             float angToRot = -90 - ((atanf(y/x2) * 180) / M_PI);
             Rotate(angToRot);
+        }
+    }
+}
+*/
+
+float PutRobotParallele()
+{
+    myservo.write(90);
+    delay(300);
+    float y = Distance();
+    myservo.write(180);//capteur vers la gauche
+    delay(700);
+    float x1 = Distance();
+    myservo.write(0);//capteur vers la droite
+    delay(700);
+    float x2 = Distance();
+    myservo.write(90);
+
+    if(x1 > 70 && x2 > 70)
+    {
+        //Le robot est trop en face du mur pour faire au moins une mesure correct, on tourne pour recommencer les mesure
+        Rotate(25);
+        return PutRobotParallele() - 25;
+    }
+    else
+    {
+        //Si x1 < x2 le mur est a gauche du robot, sinon il est a droite
+        //Pour aller au plus simple on supp qu'on est pile devant.
+        if(x1 < x2)
+        {
+            return(90 + ((atanf(y/x1) * 180)/M_PI));
+        }
+        else
+        {
+            return(-90 - ((atanf(y/x2) * 180) / M_PI));
         }
     }
 }
